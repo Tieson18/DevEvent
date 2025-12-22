@@ -1,4 +1,4 @@
-import mongoose, { Mongoose } from 'mongoose';
+import mongoose, { Mongoose } from "mongoose";
 
 /**
  * Cached mongoose connection type
@@ -28,35 +28,40 @@ if (!globalThis._mongoose) {
 
 /**
  * MongoDB connection string
+ * Fail fast at module load if missing
  */
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  throw new Error('MONGODB_URI environment variable is not defined');
+  throw new Error("MONGODB_URI environment variable is not defined");
 }
+
+// Assign to a new const so TS knows it's a string (no squiggles)
+const uri: string = MONGODB_URI;
 
 /**
  * Singleton connection helper
  */
 export async function connectToDatabase(): Promise<Mongoose> {
+  // Return cached connection if exists
   if (cached.conn) {
     return cached.conn;
   }
 
+  // If a connection is already in progress, wait for it
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
-      // Good defaults (optional)
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI!, opts);
+    cached.promise = mongoose.connect(uri, opts);
   }
 
   try {
     cached.conn = await cached.promise;
   } catch (err) {
-    cached.promise = null;
+    cached.promise = null; // allow retry on next call
     throw err;
   }
 
