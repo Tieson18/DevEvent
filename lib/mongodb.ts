@@ -1,9 +1,7 @@
 import mongoose, { Mongoose } from 'mongoose';
 
 /**
- * Shape of the cached connection object stored on the global scope.
- * This avoids creating multiple connections in development when Next.js
- * hot-reloads or re-imports modules.
+ * Cached mongoose connection type
  */
 interface MongooseCache {
   conn: Mongoose | null;
@@ -11,73 +9,55 @@ interface MongooseCache {
 }
 
 /**
- * Augment the NodeJS global type to include our cached mongoose connection.
- * We use `var` on `global` so that TypeScript understands this property
- * can exist on `globalThis` at runtime.
+ * Extend globalThis safely (TS + Next.js friendly)
  */
 declare global {
-  // `var` is required here to correctly merge with the global scope.
   // eslint-disable-next-line no-var
   var _mongoose: MongooseCache | undefined;
 }
 
-// Initialize the global cache if it doesn't exist yet.
-const cached: MongooseCache = global._mongoose ?? {
-  conn: null,
-  promise: null,
-};
+/**
+ * Use globalThis instead of global (safer + modern)
+ */
+const cached: MongooseCache =
+  globalThis._mongoose ?? { conn: null, promise: null };
 
-if (!global._mongoose) {
-  global._mongoose = cached;
+if (!globalThis._mongoose) {
+  globalThis._mongoose = cached;
 }
 
 /**
- * Get the MongoDB connection string from environment variables.
- *
- * This should be defined in your environment (e.g. `.env.local`) as:
- *   MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>/<db>?retryWrites=true&w=majority"
+ * MongoDB connection string
  */
-const MONGODB_URI: string | undefined = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
-  // Fail fast in production if the connection string is missing.
   throw new Error('MONGODB_URI environment variable is not defined');
 }
 
 /**
- * Establishes (or reuses) a singleton Mongoose connection.
- *
- * In development, Next.js reloads modules frequently. Without caching,
- * each reload would create a new database connection, quickly exhausting
- * connection limits. By caching the connection and the in-flight promise
- * on `globalThis`, we ensure only one connection is created per server
- * instance.
+ * Singleton connection helper
  */
 export async function connectToDatabase(): Promise<Mongoose> {
-  // If we already have an active connection, reuse it.
   if (cached.conn) {
     return cached.conn;
   }
 
-  // If a connection promise is already in progress, await it.
   if (!cached.promise) {
-    // Configure Mongoose options here if needed (e.g. timeouts, debug, etc.).
-    const opts: Parameters<typeof mongoose.connect>[1] = {
-      // Example options (uncomment / adjust as needed):
-      // autoIndex: false,
-      // maxPoolSize: 10,
+    const opts: mongoose.ConnectOptions = {
+      // Good defaults (optional)
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
     };
 
-    // Start a new connection and store the pending promise in the cache.
     cached.promise = mongoose.connect(MONGODB_URI!, opts);
   }
 
   try {
     cached.conn = await cached.promise;
-  } catch (error) {
-    // If connection fails, reset the promise so future calls can retry.
+  } catch (err) {
     cached.promise = null;
-    throw error;
+    throw err;
   }
 
   return cached.conn;
