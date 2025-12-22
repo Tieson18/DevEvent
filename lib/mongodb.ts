@@ -27,22 +27,17 @@ if (!globalThis._mongoose) {
 }
 
 /**
- * MongoDB connection string
- * Fail fast at module load if missing
- */
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI environment variable is not defined");
-}
-
-// Assign to a new const so TS knows it's a string (no squiggles)
-const uri: string = MONGODB_URI;
-
-/**
  * Singleton connection helper
  */
 export async function connectToDatabase(): Promise<Mongoose> {
+  // Validate MongoDB URI at connection time, not at module load
+  const MONGODB_URI = process.env.MONGODB_URI;
+  if (!MONGODB_URI) {
+    throw new Error(
+      "MONGODB_URI environment variable is not defined. Please set it before attempting a database connection."
+    );
+  }
+
   // Return cached connection if exists
   if (cached.conn) {
     return cached.conn;
@@ -55,7 +50,7 @@ export async function connectToDatabase(): Promise<Mongoose> {
       serverSelectionTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(uri, opts);
+    cached.promise = mongoose.connect(MONGODB_URI, opts);
   }
 
   try {
