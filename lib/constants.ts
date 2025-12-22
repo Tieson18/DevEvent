@@ -3,7 +3,7 @@ export type EventItem = {
   slug: string;
   image: string;
   location: string;
-  date: string; // ISO date
+  date: Date | string; // ISO date string
   time: string; // human-friendly time
   description?: string;
   url?: string;
