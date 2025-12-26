@@ -19,8 +19,10 @@ declare global {
 /**
  * Use globalThis instead of global (safer + modern)
  */
-const cached: MongooseCache =
-  globalThis._mongoose ?? { conn: null, promise: null };
+const cached: MongooseCache = globalThis._mongoose ?? {
+  conn: null,
+  promise: null,
+};
 
 if (!globalThis._mongoose) {
   globalThis._mongoose = cached;
@@ -30,27 +32,36 @@ if (!globalThis._mongoose) {
  * Singleton connection helper
  */
 export async function connectToDatabase(): Promise<Mongoose> {
-  // Validate MongoDB URI at connection time, not at module load
   const MONGODB_URI = process.env.MONGODB_URI;
   if (!MONGODB_URI) {
-    throw new Error(
-      "MONGODB_URI environment variable is not defined. Please set it before attempting a database connection."
-    );
+    throw new Error("❌ MONGODB_URI environment variable is not defined.");
   }
 
-  // Return cached connection if exists
+  // ✅ Already connected
   if (cached.conn) {
+    console.log("✅ MongoDB already connected");
     return cached.conn;
   }
 
-  // If a connection is already in progress, wait for it
+  // ⏳ Connecting for the first time
   if (!cached.promise) {
+    console.log("⏳ Connecting to MongoDB...");
+
     const opts: mongoose.ConnectOptions = {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts);
+    cached.promise = mongoose
+      .connect(MONGODB_URI, opts)
+      .then((mongoose) => {
+        console.log("🚀 MongoDB connected successfully");
+        return mongoose;
+      })
+      .catch((err) => {
+        console.error("❌ MongoDB connection failed:", err);
+        throw err;
+      });
   }
 
   try {
