@@ -12,7 +12,6 @@ interface MongooseCache {
  * Extend globalThis safely (TS + Next.js friendly)
  */
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoose: MongooseCache | undefined;
 }
 

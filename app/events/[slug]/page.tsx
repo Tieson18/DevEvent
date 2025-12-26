@@ -2,6 +2,7 @@ import BookEvent from "@/components/BookEvent";
 import EventCard from "@/components/EventCard";
 import { IEvent } from "@/database";
 import { getSimilarEvents } from "@/lib/actions/event.actions";
+import { cacheLife } from "next/cache";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import React from "react";
@@ -33,6 +34,8 @@ const EventTag = ({ tags }: { tags: string[] }) => (
 );
 
 const EventDetailPage = async ({ params, }: { params: Promise<{ slug: string }> }) => {
+  'use cache';
+  cacheLife("hours")
   const { slug } = await params;
 
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${slug}`, {
@@ -44,7 +47,6 @@ const EventDetailPage = async ({ params, }: { params: Promise<{ slug: string }> 
   }
 
   const data = await res.json();
-  console.log("RESULT", data);
 
   if (!res.ok) {
     console.error("Failed to fetch event", { status: res.status, body: data });
@@ -62,7 +64,6 @@ const EventDetailPage = async ({ params, }: { params: Promise<{ slug: string }> 
   const bookings = 10
 
   const similarEvents: IEvent[] = await getSimilarEvents(slug);
-  console.log("SIMILAR EVENT", similarEvents);
 
 
   return (
@@ -107,7 +108,7 @@ const EventDetailPage = async ({ params, }: { params: Promise<{ slug: string }> 
               <p className="text-sm">Be the first to book this event</p>
             )}
             {/* Booking form component can be placed here */}
-            <BookEvent />
+            <BookEvent eventId={data._id} slug={data.slug} />
           </div>
         </aside>
       </div>
