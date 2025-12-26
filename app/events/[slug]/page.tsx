@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import React from "react";
 
 const EventDetailItem = ({ icon, alt, label, }: { icon: string; alt: string; label: string; }) => (
-  <div className="flex-row-gap-2 items-center">
+  <div className="flex items-center gap-2">
     <Image src={icon} alt={alt} width={17} height={17} />
     <span>{label}</span>
   </div>
@@ -35,12 +35,21 @@ const EventTag = ({ tags }: { tags: string[] }) => (
 const EventDetailPage = async ({ params, }: { params: Promise<{ slug: string }> }) => {
   const { slug } = await params;
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${slug}`, { next: { revalidate: 60 } });
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${slug}`, {
+    next: { revalidate: 60 },
+  });
+
+  if (res.status === 404) {
+    return notFound();
+  }
 
   const data = await res.json();
   console.log("RESULT", data);
 
-  if (!data) return notFound();
+  if (!res.ok) {
+    console.error("Failed to fetch event", { status: res.status, body: data });
+    throw new Error("Failed to load event");
+  }
 
   const eventItems = [
     { icon: "/icons/calendar.svg", alt: "calendar", label: data.date },

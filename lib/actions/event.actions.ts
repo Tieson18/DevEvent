@@ -7,7 +7,6 @@ export const getSimilarEvents = async (slug: string) => {
     try {
         await connectToDatabase();
         const event = await Event.findOne({ slug }).lean();
-        console.log("EVENT", event);
 
         if (!event) {
             throw new Error("Event not found");
