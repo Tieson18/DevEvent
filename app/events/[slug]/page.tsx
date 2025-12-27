@@ -6,7 +6,6 @@ type PageProps = {
 };
 const EventDetailPage = async ({ params, }: PageProps) => {
   const slug = params.then(p => p.slug);
-  console.log("SLUG", slug);
 
   return (
     <main>

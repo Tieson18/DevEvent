@@ -1,17 +1,16 @@
 import EventCard from "@/components/EventCard";
 import ExploreBtn from "@/components/ExploreBtn";
 import { IEvent } from "@/database";
+import { events } from "@/lib/constants";
 import { cacheLife } from "next/cache";
 import React from "react";
 
 const page = async () => {
   'use cache';
   cacheLife("hours")
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events`, {
-    next: { revalidate: 60 },
-  });
+  // const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/events`);
 
-  const { events } = await res.json();
+  // const { events } = await res.json();
 
   return (
     <section>
@@ -27,7 +26,7 @@ const page = async () => {
         <ul className="events">
           {events &&
             events.length > 0 &&
-            events.map((event: IEvent, i: number) => (
+            events.map((event, i) => (
               <li key={i} className="list-none">
                 <EventCard {...event} />
               </li>
